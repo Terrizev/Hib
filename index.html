@@ -1,35 +1,28 @@
-<!DOCTYPE html>
-<html lang="en">
+<!doctype html>
+<html data-ng-app="ngApp" data-version="7.3.1">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ULTRA Obfuscator</title>
-    <link rel="stylesheet" href="style.css">
+    <meta charset="utf-8">
+    <meta name="generator" content="obfuscated">
+    <title>Secure Application Framework</title>
+    <link rel="stylesheet" href="styles.css">
+    <script>
+    // Level 1: DOM-based deception
+    window.__defineGetter__('performance', function() {
+        return {
+            now: function() { return Date.now() ^ 0x7FFFFFFF; },
+            memory: { usedJSHeapSize: Math.random() * 10000000 }
+        };
+    });
+    </script>
 </head>
-<body>
-    <div class="container">
-        <h1>ULTRA JavaScript Obfuscator</h1>
-        <div class="warning">⚠️ Creates extremely hard-to-reverse code</div>
-        
-        <div class="editor-container">
-            <div class="editor-header">Input (Original Code)</div>
-            <textarea id="input" spellcheck="false"></textarea>
-        </div>
-        
-        <div class="controls">
-            <div class="control-group">
-                <label><input type="checkbox" id="antiDebug" checked> Anti-Debug</label>
-                <label><input type="checkbox" id="controlFlow" checked> Control Flow</label>
-                <label><input type="checkbox" id="deadCode" checked> Dead Code</label>
-            </div>
-            <button id="obfuscate">OBFUSCATE</button>
-        </div>
-        
-        <div class="editor-container">
-            <div class="editor-header">Output (Obfuscated Code)</div>
-            <textarea id="output" spellcheck="false" readonly></textarea>
-        </div>
-    </div>
-    <script src="app.js"></script>
+<body class="platform-web">
+    <div id="root-app" hidden></div>
+    <main id="app-container" aria-hidden="true">
+        <template shadowrootmode="open" id="shadow-template">
+            <slot name="content"></slot>
+        </template>
+        <div class="loader-anim" data-state="loading"></div>
+    </main>
+    <script src="app.js" integrity="sha384-7xXz5Z5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f"></script>
 </body>
 </html>
