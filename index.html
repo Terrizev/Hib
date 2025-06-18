@@ -3,66 +3,33 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hardcore Obfuscator</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 20px;
-            background-color: #f5f5f5;
-        }
-        textarea, select, button {
-            width: 100%;
-            padding: 10px;
-            margin: 10px 0;
-            box-sizing: border-box;
-        }
-        button {
-            background-color: #4CAF50;
-            color: white;
-            border: none;
-            cursor: pointer;
-        }
-        button:hover {
-            background-color: #45a049;
-        }
-        .level-info {
-            background-color: #ffeb3b;
-            padding: 10px;
-            margin: 10px 0;
-        }
-    </style>
+    <title>ULTRA Obfuscator</title>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <h1>Hardcore JavaScript Obfuscator</h1>
-    <p>Warning: This creates extremely difficult to read code. Use at your own risk.</p>
-    
-    <div>
-        <label for="codeInput">Enter your JavaScript code:</label>
-        <textarea id="codeInput" rows="10" placeholder="function example() { return 'hello'; }"></textarea>
+    <div class="container">
+        <h1>ULTRA JavaScript Obfuscator</h1>
+        <div class="warning">⚠️ Creates extremely hard-to-reverse code</div>
+        
+        <div class="editor-container">
+            <div class="editor-header">Input (Original Code)</div>
+            <textarea id="input" spellcheck="false"></textarea>
+        </div>
+        
+        <div class="controls">
+            <div class="control-group">
+                <label><input type="checkbox" id="antiDebug" checked> Anti-Debug</label>
+                <label><input type="checkbox" id="controlFlow" checked> Control Flow</label>
+                <label><input type="checkbox" id="deadCode" checked> Dead Code</label>
+            </div>
+            <button id="obfuscate">OBFUSCATE</button>
+        </div>
+        
+        <div class="editor-container">
+            <div class="editor-header">Output (Obfuscated Code)</div>
+            <textarea id="output" spellcheck="false" readonly></textarea>
+        </div>
     </div>
-    
-    <div>
-        <label for="obfuscationLevel">Select obfuscation level:</label>
-        <select id="obfuscationLevel">
-            <option value="1">Level 1 - Basic Unicode Renaming</option>
-            <option value="2">Level 2 - Extended Unicode with Hex Escapes</option>
-            <option value="3">Level 3 - Extreme Obfuscation (Hard to Reverse)</option>
-        </select>
-    </div>
-    
-    <div class="level-info" id="levelInfo">
-        Level 1: Basic Unicode variable/function renaming with common Chinese characters.
-    </div>
-    
-    <button id="obfuscateBtn">Obfuscate Code</button>
-    
-    <div>
-        <label for="codeOutput">Obfuscated Result:</label>
-        <textarea id="codeOutput" rows="10" readonly></textarea>
-    </div>
-    
     <script src="app.js"></script>
 </body>
 </html>
