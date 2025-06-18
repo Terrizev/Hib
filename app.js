@@ -1,225 +1,165 @@
-// Core obfuscation engine
-class UltimateObfuscator {
+class UltraObfuscator {
     constructor() {
-        this.unicodeChars = '魑魅魍魎魂魄幽灵鬼魔妖煞凶煞邪惡混沌虚空幽冥玄黄';
-        this.hexPrefixes = ['\\x', '\\u', '\\u0', '\\x0'];
-        this.wrappers = [
-            c => `(function(){${c}})();`,
-            c => `!function(){${c}}();`,
-            c => `+function(){${c}}();`,
-            c => `var _=[];_[0]=function(){${c}};_[0]();`,
-            c => `(function(a,b){${c}})(+[],+[]);`
-        ];
-        this.antiDebugCode = `
-            function 检测调试器(){
-                var 开始时间=performance.now();
-                debugger;
-                var 结束时间=performance.now();
-                if(结束时间-开始时间>100){
-                    document.body.innerHTML='<h1 style="color:red">DEBUGGER DETECTED</h1>';
-                    while(true){}
-                }
-            }
-            setInterval(检测调试器,1000);
-            检测调试器();
-        `;
+        this.chars = '魑魅魍魎魂魄幽灵鬼魔妖煞凶煞邪惡混沌虚空幽冥玄黄龍鳳麒麟妖怪魔王邪神';
+        this.hexVariations = ['\\x', '\\u', '\\u0', '\\x0', '\\u00'];
     }
 
-    // Generate random Unicode identifier
-    randomIdentifier(length = 8) {
-        let result = '';
+    randomName(length = 6) {
+        let name = '';
         for (let i = 0; i < length; i++) {
-            result += this.unicodeChars.charAt(Math.floor(Math.random() * this.unicodeChars.length));
+            name += this.chars.charAt(Math.floor(Math.random() * this.chars.length));
         }
-        return result + Math.floor(Math.random() * 1000);
+        return name + Math.floor(Math.random() * 999);
     }
 
-    // String obfuscation with hex/unicode escapes
     obfuscateString(str) {
-        let result = '';
-        const method = Math.floor(Math.random() * 3);
+        if (str.length <= 2) return str;
         
+        const method = Math.floor(Math.random() * 4);
         switch(method) {
-            case 0: // Hex escape
-                for (let i = 0; i < str.length; i++) {
-                    result += `\\x${str.charCodeAt(i).toString(16).padStart(2, '0')}`;
-                }
-                return `"${result}"`;
+            case 0: // Full hex escape
+                return `"${str.split('').map(c => `\\x${c.charCodeAt(0).toString(16).padStart(2,'0')}`).join('')}"`;
                 
-            case 1: // Unicode escape
-                for (let i = 0; i < str.length; i++) {
-                    result += `\\u${str.charCodeAt(i).toString(16).padStart(4, '0')}`;
-                }
-                return `"${result}"`;
-                
-            case 2: // Split and concatenate
+            case 1: // Split concatenation
                 const parts = [];
                 let remaining = str;
                 while (remaining.length > 0) {
-                    const partLength = Math.max(1, Math.floor(Math.random() * Math.min(5, remaining.length)));
-                    const part = remaining.substring(0, partLength);
-                    remaining = remaining.substring(partLength);
-                    
-                    if (Math.random() > 0.5) {
-                        parts.push(this.obfuscateString(part));
-                    } else {
-                        parts.push(`"${part}"`);
-                    }
+                    const take = Math.min(1 + Math.floor(Math.random() * 3), remaining.length);
+                    parts.push(`"${remaining.substr(0, take)}"`);
+                    remaining = remaining.substr(take);
                 }
                 return parts.join('+');
+                
+            case 2: // Unicode escape
+                return `"${str.split('').map(c => `\\u${c.charCodeAt(0).toString(16).padStart(4,'0')}`).join('')}"`;
+                
+            case 3: // Mixed encoding
+                return str.split('').map(c => 
+                    Math.random() > 0.5 
+                        ? `\\x${c.charCodeAt(0).toString(16)}`
+                        : c
+                ).join('');
         }
     }
 
-    // Rename all identifiers
-    renameIdentifiers(code) {
+    mangleIdentifiers(code) {
         const identifierMap = {};
-        const reservedWords = new Set([
-            'break', 'case', 'catch', 'class', 'const', 'continue', 'debugger', 'default',
-            'delete', 'do', 'else', 'export', 'extends', 'finally', 'for', 'function', 'if',
-            'import', 'in', 'instanceof', 'new', 'return', 'super', 'switch', 'this', 'throw',
-            'try', 'typeof', 'var', 'void', 'while', 'with', 'yield', 'let', 'await'
-        ]);
-
-        // Find all identifiers
-        const identifierRegex = /\b([a-zA-Z_$][a-zA-Z0-9_$]*)\b/g;
-        let match;
-        const identifiers = new Set();
+        const reserved = new Set(['function', 'return', 'if', 'else', 'for', 'while', 'do', 'switch', 'case', 'break', 'continue', 'try', 'catch', 'throw', 'var', 'let', 'const', 'new', 'this', 'class', 'extends']);
         
-        while ((match = identifierRegex.exec(code)) !== null) {
-            if (!reservedWords.has(match[1])) {
-                identifiers.add(match[1]);
+        // Find all identifiers
+        const regex = /(?<!\w)([a-zA-Z_$][a-zA-Z0-9_$]*)(?!\w)/g;
+        let match;
+        while ((match = regex.exec(code)) !== null) {
+            const id = match[1];
+            if (!reserved.has(id) && !identifierMap[id]) {
+                identifierMap[id] = this.randomName();
             }
         }
-
-        // Create mapping
-        Array.from(identifiers).forEach(id => {
-            identifierMap[id] = this.randomIdentifier();
-        });
-
-        // Replace all identifiers
+        
+        // Replace all found identifiers
         for (const [original, obfuscated] of Object.entries(identifierMap)) {
-            const regex = new RegExp(`\\b${original}\\b`, 'g');
-            code = code.replace(regex, obfuscated);
+            code = code.replace(new RegExp(`\\b${original}\\b`, 'g'), obfuscated);
         }
-
+        
         return code;
     }
 
-    // Add control flow obfuscation
     addControlFlow(code) {
-        const wrapperId = this.randomIdentifier();
+        const wrapperVar = this.randomName();
         const cases = [];
-        const defaultCase = Math.floor(Math.random() * 5) + 1;
+        const correctCase = Math.floor(Math.random() * 5);
         
-        for (let i = 1; i <= 5; i++) {
-            if (i === defaultCase) {
-                cases.push(`case ${i}:${code}break;`);
+        for (let i = 0; i < 5; i++) {
+            if (i === correctCase) {
+                cases.push(`case ${i}: ${code} break;`);
             } else {
-                const deadCode = `console.${['log','warn','error'][Math.floor(Math.random()*3)]}(${this.obfuscateString('Red herring ' + Math.random().toString(36).substring(2, 15))});`;
-                cases.push(`case ${i}:${deadCode}break;`);
+                cases.push(`case ${i}: ${this.generateDeadCode()}; break;`);
             }
         }
         
         return `
-            var ${wrapperId}=${Math.floor(Math.random()*4)+1};
-            switch(${wrapperId}){
+            var ${wrapperVar} = ${correctCase};
+            switch(${wrapperVar}) {
                 ${cases.join('\n')}
-                default:${code}
+                default: ${this.generateDeadCode()};
             }
         `;
     }
 
-    // Add dead code
-    addDeadCode(code) {
-        const deadFuncs = [];
-        const deadFuncCount = Math.floor(Math.random() * 5) + 3;
+    generateDeadCode() {
+        const deadVars = [];
+        const count = 2 + Math.floor(Math.random() * 3);
         
-        for (let i = 0; i < deadFuncCount; i++) {
-            const funcName = this.randomIdentifier();
-            const operations = [];
-            const opCount = Math.floor(Math.random() * 5) + 2;
-            
-            for (let j = 0; j < opCount; j++) {
-                operations.push(
-                    `var ${this.randomIdentifier(4)}=${Math.floor(Math.random()*1000)};` +
-                    `${this.randomIdentifier(4)}=${Math.random().toString(36).substring(2, 15)};`
-                );
-            }
-            
-            deadFuncs.push(`
-                function ${funcName}(){
-                    ${operations.join('\n')}
-                    return ${Math.random() > 0.5 ? 'true' : 'false'};
-                }
-                ${funcName}();
-            `);
+        for (let i = 0; i < count; i++) {
+            deadVars.push(`var ${this.randomName(3)} = ${Math.random()};`);
         }
         
-        return deadFuncs.join('\n') + '\n' + code;
+        return `
+            ${deadVars.join('\n')}
+            function ${this.randomName()}() {
+                return ${Math.random() > 0.5 ? 'true' : 'false'};
+            }
+            ${this.randomName()}();
+        `;
     }
 
-    // Main obfuscation function
-    obfuscate(code, options = {}) {
-        // Apply basic renaming first
-        code = this.renameIdentifiers(code);
+    addAntiDebug() {
+        return `
+            function ${this.randomName()}() {
+                var ${this.randomName()} = new Date();
+                debugger;
+                if (new Date() - ${this.randomName()} > 100) {
+                    document.body.innerHTML = '<h1 style="color:red">DEBUGGER DETECTED</h1>';
+                    while(1){}
+                }
+            }
+            setInterval(${this.randomName()}, 1000);
+        `;
+    }
+
+    obfuscate(code, options) {
+        // Phase 1: Basic obfuscation
+        code = this.mangleIdentifiers(code);
         
-        // Apply string obfuscation
-        const stringRegex = /(["'`])(?:(?=(\\?))\2.)*?\1/g;
-        code = code.replace(stringRegex, match => {
-            if (match.length <= 2) return match;
+        // Phase 2: String obfuscation
+        code = code.replace(/("|'|`)(?:(?=(\\?))\2.)*?\1/g, match => {
             return this.obfuscateString(match.slice(1, -1), match[0]);
         });
         
-        // Apply selected obfuscation techniques
-        if (options.controlFlow) {
-            code = this.addControlFlow(code);
-        }
+        // Phase 3: Advanced obfuscations
+        if (options.controlFlow) code = this.addControlFlow(code);
+        if (options.deadCode) code = this.generateDeadCode() + code;
+        if (options.antiDebug) code = this.addAntiDebug() + code;
         
-        if (options.deadCode) {
-            code = this.addDeadCode(code);
-        }
-        
-        // Add anti-debug if enabled
-        if (options.antiDebug) {
-            code = this.antiDebugCode + code;
-        }
-        
-        // Apply multiple wrappers
-        for (let i = 0; i < 3; i++) {
-            const wrapper = this.wrappers[Math.floor(Math.random() * this.wrappers.length)];
-            code = wrapper(code);
-        }
-        
-        return code;
+        // Final wrapper
+        return `(function(){${code}})();`;
     }
 }
 
-// UI Interaction
+// UI Setup
 document.addEventListener('DOMContentLoaded', () => {
-    const obfuscator = new UltimateObfuscator();
-    const inputCode = document.getElementById('inputCode');
-    const outputCode = document.getElementById('outputCode');
-    const obfuscateBtn = document.getElementById('obfuscateBtn');
-    const copyBtn = document.getElementById('copyBtn');
+    const obfuscator = new UltraObfuscator();
+    const input = document.getElementById('input');
+    const output = document.getElementById('output');
+    const obfuscateBtn = document.getElementById('obfuscate');
     
     obfuscateBtn.addEventListener('click', () => {
         const options = {
             antiDebug: document.getElementById('antiDebug').checked,
-            stringSplitting: document.getElementById('stringSplitting').checked,
             controlFlow: document.getElementById('controlFlow').checked,
             deadCode: document.getElementById('deadCode').checked
         };
         
         try {
-            const obfuscated = obfuscator.obfuscate(inputCode.value, options);
-            outputCode.value = obfuscated;
+            const startTime = performance.now();
+            output.value = obfuscator.obfuscate(input.value, options);
+            const timeTaken = (performance.now() - startTime).toFixed(2);
+            console.log(`Obfuscated in ${timeTaken}ms`);
         } catch (e) {
-            outputCode.value = `/* Obfuscation Error: ${e.message} */\n${inputCode.value}`;
+            output.value = `// Obfuscation Error:\n// ${e.message}`;
         }
     });
     
-    copyBtn.addEventListener('click', () => {
-        outputCode.select();
-        document.execCommand('copy');
-    });
+    // Sample code button (for demo purposes)
+    input.value = `function greet(name) {\n  return 'Hello ' + name;\n}\n\nconsole.log(greet('World'));`;
 });
