@@ -1,167 +1,225 @@
-// Base obfuscation components
-const 高宝座BaseObfuscator = {
-    // Level 1: Basic Unicode renaming
-    level1: function(code) {
-        const prefixes = ['高宝座', '幽灵', '暗影', '龙焰', '虚空', '混沌', '神秘'];
-        const suffixes = ['之刃', '之怒', '之影', '之力', '之魂', '之眼', '之翼'];
-        const connectors = ['X', 'Z', 'Δ', 'Ψ', 'Ω', '∞', '※'];
+// Core obfuscation engine
+class UltimateObfuscator {
+    constructor() {
+        this.unicodeChars = '魑魅魍魎魂魄幽灵鬼魔妖煞凶煞邪惡混沌虚空幽冥玄黄';
+        this.hexPrefixes = ['\\x', '\\u', '\\u0', '\\x0'];
+        this.wrappers = [
+            c => `(function(){${c}})();`,
+            c => `!function(){${c}}();`,
+            c => `+function(){${c}}();`,
+            c => `var _=[];_[0]=function(){${c}};_[0]();`,
+            c => `(function(a,b){${c}})(+[],+[]);`
+        ];
+        this.antiDebugCode = `
+            function 检测调试器(){
+                var 开始时间=performance.now();
+                debugger;
+                var 结束时间=performance.now();
+                if(结束时间-开始时间>100){
+                    document.body.innerHTML='<h1 style="color:red">DEBUGGER DETECTED</h1>';
+                    while(true){}
+                }
+            }
+            setInterval(检测调试器,1000);
+            检测调试器();
+        `;
+    }
+
+    // Generate random Unicode identifier
+    randomIdentifier(length = 8) {
+        let result = '';
+        for (let i = 0; i < length; i++) {
+            result += this.unicodeChars.charAt(Math.floor(Math.random() * this.unicodeChars.length));
+        }
+        return result + Math.floor(Math.random() * 1000);
+    }
+
+    // String obfuscation with hex/unicode escapes
+    obfuscateString(str) {
+        let result = '';
+        const method = Math.floor(Math.random() * 3);
         
-        let varCounter = 0;
-        const varMap = {};
-        
-        // Find all variables and functions to rename
-        const varRegex = /(?:var|let|const|function)\s+([a-zA-Z_$][0-9a-zA-Z_$]*)/g;
+        switch(method) {
+            case 0: // Hex escape
+                for (let i = 0; i < str.length; i++) {
+                    result += `\\x${str.charCodeAt(i).toString(16).padStart(2, '0')}`;
+                }
+                return `"${result}"`;
+                
+            case 1: // Unicode escape
+                for (let i = 0; i < str.length; i++) {
+                    result += `\\u${str.charCodeAt(i).toString(16).padStart(4, '0')}`;
+                }
+                return `"${result}"`;
+                
+            case 2: // Split and concatenate
+                const parts = [];
+                let remaining = str;
+                while (remaining.length > 0) {
+                    const partLength = Math.max(1, Math.floor(Math.random() * Math.min(5, remaining.length)));
+                    const part = remaining.substring(0, partLength);
+                    remaining = remaining.substring(partLength);
+                    
+                    if (Math.random() > 0.5) {
+                        parts.push(this.obfuscateString(part));
+                    } else {
+                        parts.push(`"${part}"`);
+                    }
+                }
+                return parts.join('+');
+        }
+    }
+
+    // Rename all identifiers
+    renameIdentifiers(code) {
+        const identifierMap = {};
+        const reservedWords = new Set([
+            'break', 'case', 'catch', 'class', 'const', 'continue', 'debugger', 'default',
+            'delete', 'do', 'else', 'export', 'extends', 'finally', 'for', 'function', 'if',
+            'import', 'in', 'instanceof', 'new', 'return', 'super', 'switch', 'this', 'throw',
+            'try', 'typeof', 'var', 'void', 'while', 'with', 'yield', 'let', 'await'
+        ]);
+
+        // Find all identifiers
+        const identifierRegex = /\b([a-zA-Z_$][a-zA-Z0-9_$]*)\b/g;
         let match;
-        while ((match = varRegex.exec(code)) !== null) {
-            if (!varMap[match[1]] && match[1].length > 1) {
-                const prefix = prefixes[Math.floor(Math.random() * prefixes.length)];
-                const suffix = suffixes[Math.floor(Math.random() * suffixes.length)];
-                const connector = connectors[Math.floor(Math.random() * connectors.length)];
-                varMap[match[1]] = `${prefix}${connector}${suffix}${varCounter++}`;
+        const identifiers = new Set();
+        
+        while ((match = identifierRegex.exec(code)) !== null) {
+            if (!reservedWords.has(match[1])) {
+                identifiers.add(match[1]);
             }
         }
-        
-        // Replace all occurrences
-        for (const [original, obfuscated] of Object.entries(varMap)) {
+
+        // Create mapping
+        Array.from(identifiers).forEach(id => {
+            identifierMap[id] = this.randomIdentifier();
+        });
+
+        // Replace all identifiers
+        for (const [original, obfuscated] of Object.entries(identifierMap)) {
             const regex = new RegExp(`\\b${original}\\b`, 'g');
             code = code.replace(regex, obfuscated);
         }
-        
+
         return code;
-    },
-    
-    // Level 2: Extended Unicode with hex escapes
-    level2: function(code) {
-        // First apply level1
-        code = this.level1(code);
+    }
+
+    // Add control flow obfuscation
+    addControlFlow(code) {
+        const wrapperId = this.randomIdentifier();
+        const cases = [];
+        const defaultCase = Math.floor(Math.random() * 5) + 1;
         
-        // Additional obfuscation
-        const specialChars = ['齐', '魔', '幻', '幽', '冥', '煞', '魇'];
-        const hexPrefixes = ['\\x', '\\u', '\\x', '\\u'];
-        
-        // Find strings to partially hex escape
-        const stringRegex = /(["'`])(?:(?=(\\?))\2.)*?\1/g;
-        code = code.replace(stringRegex, (match) => {
-            // Don't obfuscate very short strings
-            if (match.length <= 4) return match;
-            
-            const quote = match[0];
-            const content = match.slice(1, -1);
-            let newContent = '';
-            
-            for (let i = 0; i < content.length; i++) {
-                if (Math.random() > 0.7) {
-                    const prefix = hexPrefixes[Math.floor(Math.random() * hexPrefixes.length)];
-                    if (prefix === '\\x') {
-                        newContent += `\\x${content.charCodeAt(i).toString(16).padStart(2, '0')}`;
-                    } else {
-                        newContent += `\\u${content.charCodeAt(i).toString(16).padStart(4, '0')}`;
-                    }
-                } else {
-                    newContent += content[i];
-                }
+        for (let i = 1; i <= 5; i++) {
+            if (i === defaultCase) {
+                cases.push(`case ${i}:${code}break;`);
+            } else {
+                const deadCode = `console.${['log','warn','error'][Math.floor(Math.random()*3)]}(${this.obfuscateString('Red herring ' + Math.random().toString(36).substring(2, 15))});`;
+                cases.push(`case ${i}:${deadCode}break;`);
             }
-            
-            return quote + newContent + quote;
-        });
-        
-        // Add random Unicode variable declarations
-        const randomVarCount = 5 + Math.floor(Math.random() * 10);
-        let randomVars = '';
-        
-        for (let i = 0; i < randomVarCount; i++) {
-            const char1 = specialChars[Math.floor(Math.random() * specialChars.length)];
-            const char2 = specialChars[Math.floor(Math.random() * specialChars.length)];
-            const num = Math.floor(Math.random() * 1000);
-            randomVars += `var ${char1}${char2}${num} = ${Math.random()};\n`;
         }
         
-        return randomVars + code;
-    },
-    
-    // Level 3: Extreme obfuscation
-    level3: function(code) {
-        // Apply level2 first
-        code = this.level2(code);
+        return `
+            var ${wrapperId}=${Math.floor(Math.random()*4)+1};
+            switch(${wrapperId}){
+                ${cases.join('\n')}
+                default:${code}
+            }
+        `;
+    }
+
+    // Add dead code
+    addDeadCode(code) {
+        const deadFuncs = [];
+        const deadFuncCount = Math.floor(Math.random() * 5) + 3;
         
-        // Add more complex transformations
-        const wrappers = [
-            (c) => `(function(){ ${c} })();`,
-            (c) => `!function(){ ${c} }();`,
-            (c) => `var _ = []; _[0] = function(){ ${c} }; _[0]();`
-        ];
+        for (let i = 0; i < deadFuncCount; i++) {
+            const funcName = this.randomIdentifier();
+            const operations = [];
+            const opCount = Math.floor(Math.random() * 5) + 2;
+            
+            for (let j = 0; j < opCount; j++) {
+                operations.push(
+                    `var ${this.randomIdentifier(4)}=${Math.floor(Math.random()*1000)};` +
+                    `${this.randomIdentifier(4)}=${Math.random().toString(36).substring(2, 15)};`
+                );
+            }
+            
+            deadFuncs.push(`
+                function ${funcName}(){
+                    ${operations.join('\n')}
+                    return ${Math.random() > 0.5 ? 'true' : 'false'};
+                }
+                ${funcName}();
+            `);
+        }
         
-        // Wrap the code in multiple layers
+        return deadFuncs.join('\n') + '\n' + code;
+    }
+
+    // Main obfuscation function
+    obfuscate(code, options = {}) {
+        // Apply basic renaming first
+        code = this.renameIdentifiers(code);
+        
+        // Apply string obfuscation
+        const stringRegex = /(["'`])(?:(?=(\\?))\2.)*?\1/g;
+        code = code.replace(stringRegex, match => {
+            if (match.length <= 2) return match;
+            return this.obfuscateString(match.slice(1, -1), match[0]);
+        });
+        
+        // Apply selected obfuscation techniques
+        if (options.controlFlow) {
+            code = this.addControlFlow(code);
+        }
+        
+        if (options.deadCode) {
+            code = this.addDeadCode(code);
+        }
+        
+        // Add anti-debug if enabled
+        if (options.antiDebug) {
+            code = this.antiDebugCode + code;
+        }
+        
+        // Apply multiple wrappers
         for (let i = 0; i < 3; i++) {
-            const wrapper = wrappers[Math.floor(Math.random() * wrappers.length)];
+            const wrapper = this.wrappers[Math.floor(Math.random() * this.wrappers.length)];
             code = wrapper(code);
         }
         
-        // Add dead code
-        const deadCode = `
-            var 幽灵之影 = function() {
-                var 暗影之力 = [${Array.from({length: 20}, () => Math.random()).join(',')}];
-                return function() {
-                    return 暗影之力[Math.floor(Math.random() * 暗影之力.length)];
-                };
-            }();
-            
-            try {
-                var 虚空之怒 = new Function("return " + "this")();
-                虚空之怒["\\x65\\x76\\x61\\x6c"]("\\x63\\x6f\\x6e\\x73\\x6f\\x6c\\x65['\\x6c\\x6f\\x67']('\\x44\\x65\\x61\\x64\\x20\\x43\\x6f\\x64\\x65\\x20\\x45\\x78\\x65\\x63\\x75\\x74\\x65\\x64')");
-            } catch(龙焰之翼) {}
-        `;
+        return code;
+    }
+}
+
+// UI Interaction
+document.addEventListener('DOMContentLoaded', () => {
+    const obfuscator = new UltimateObfuscator();
+    const inputCode = document.getElementById('inputCode');
+    const outputCode = document.getElementById('outputCode');
+    const obfuscateBtn = document.getElementById('obfuscateBtn');
+    const copyBtn = document.getElementById('copyBtn');
+    
+    obfuscateBtn.addEventListener('click', () => {
+        const options = {
+            antiDebug: document.getElementById('antiDebug').checked,
+            stringSplitting: document.getElementById('stringSplitting').checked,
+            controlFlow: document.getElementById('controlFlow').checked,
+            deadCode: document.getElementById('deadCode').checked
+        };
         
-        return deadCode + code;
-    }
-};
-
-// DOM interaction
-document.getElementById('obfuscationLevel').addEventListener('change', function() {
-    const level = parseInt(this.value);
-    const infoDiv = document.getElementById('levelInfo');
-    
-    switch(level) {
-        case 1:
-            infoDiv.textContent = "Level 1: Basic Unicode variable/function renaming with common Chinese characters.";
-            break;
-        case 2:
-            infoDiv.textContent = "Level 2: Extended Unicode with hex escapes in strings and random variable declarations.";
-            break;
-        case 3:
-            infoDiv.textContent = "Level 3: Extreme obfuscation with multiple wrapper functions, dead code, and eval tricks.";
-            break;
-    }
-});
-
-document.getElementById('obfuscateBtn').addEventListener('click', function() {
-    const code = document.getElementById('codeInput').value;
-    const level = parseInt(document.getElementById('obfuscationLevel').value);
-    
-    if (!code.trim()) {
-        alert("Please enter some code to obfuscate!");
-        return;
-    }
-    
-    let obfuscatedCode;
-    try {
-        switch(level) {
-            case 1:
-                obfuscatedCode = 高宝座BaseObfuscator.level1(code);
-                break;
-            case 2:
-                obfuscatedCode = 高宝座BaseObfuscator.level2(code);
-                break;
-            case 3:
-                obfuscatedCode = 高宝座BaseObfuscator.level3(code);
-                break;
-            default:
-                obfuscatedCode = "Invalid level selected";
+        try {
+            const obfuscated = obfuscator.obfuscate(inputCode.value, options);
+            outputCode.value = obfuscated;
+        } catch (e) {
+            outputCode.value = `/* Obfuscation Error: ${e.message} */\n${inputCode.value}`;
         }
-        
-        document.getElementById('codeOutput').value = obfuscatedCode;
-    } catch (e) {
-        alert("Obfuscation failed: " + e.message);
-        console.error(e);
-    }
+    });
+    
+    copyBtn.addEventListener('click', () => {
+        outputCode.select();
+        document.execCommand('copy');
+    });
 });
